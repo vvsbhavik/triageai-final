@@ -124,7 +124,7 @@ export default function NearbyMedicalAssistance({
         setCoords({ lat: latitude, lng: longitude });
         setIsGpsGranted(true);
         setGpsLoading(false);
-        const locationName = `GPS Coordinates: ${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+        const locationName = `GPS Coordinates: ${latitude.toFixed(5) ?? "N/A"}, ${longitude.toFixed(5) ?? "N/A"}`;
         setActiveLocationName(locationName);
         
         addToast("GPS coordinates retrieved. Fetching nearby medical centers...", "info");
@@ -507,7 +507,7 @@ export default function NearbyMedicalAssistance({
                       </div>
                       <div className="flex items-center space-x-1 text-slate-500">
                         <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Coords: <strong>{hospital.lat.toFixed(5)}</strong>, <strong>{hospital.lng.toFixed(5)}</strong></span>
+                        <span>Coords: <strong>{hospital.lat.toFixed(5) ?? "N/A"}</strong>, <strong>{hospital.lng.toFixed(5) ?? "N/A"}</strong></span>
                       </div>
                     </div>
                   </div>
