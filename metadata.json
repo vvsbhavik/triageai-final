@@ -1,0 +1,6 @@
+{
+  "name": "TriageAI",
+  "description": "AI-powered Emergency Medical Travel & Healthcare Navigation Platform with multilingual assistance, real-time hospital discovery, emergency QR profiles, and clinical handoffs.",
+  "requestFramePermissions": ["microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
