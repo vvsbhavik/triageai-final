@@ -14,7 +14,7 @@ interface NearbyMedicalAssistanceProps {
 interface Hospital {
   id: string;
   name: string;
-  type: "Government Hospital" | "Private Hospital" | "Clinic" | "Pharmacy" | "Blood Bank" | "Emergency / Trauma Center";
+  type: "Hospital" | "Government Hospital" | "Private Hospital" | "Clinic" | "Pharmacy" | "Blood Bank" | "Emergency / Trauma Center";
   rating: number;
   distance: number; // in km
   duration: number; // in minutes
@@ -86,8 +86,8 @@ export default function NearbyMedicalAssistance({
         touristFriendly: !!facility.touristFriendly,
         emergencyDept: !!facility.emergencyDept,
         address: facility.address ?? "",
-        lat,
-        lng,
+        lat: facility.lat,
+        lng: facility.lng,
         isGov: String(facility.type||"").toLowerCase().includes("government"),
       }));
       list.sort((a,b)=>a.distance-b.distance);
@@ -242,7 +242,7 @@ export default function NearbyMedicalAssistance({
   const filteredSortedHospitals = React.useMemo(() => {
     let list = hospitals.filter((h) => {
       if (activeFilter === "all") return true;
-      if (activeFilter === "hospitals") return h.type === "Government Hospital" || h.type === "Private Hospital" || h.type === "Emergency / Trauma Center";
+      if (activeFilter === "hospitals") return h.type ==="hospital" || h.type === "Government Hospital" || h.type === "Private Hospital" || h.type === "Emergency / Trauma Center";
       if (activeFilter === "emergency") return h.emergencyDept || h.type === "Emergency / Trauma Center";
       if (activeFilter === "clinics") return h.type === "Clinic";
       if (activeFilter === "pharmacies") return h.type === "Pharmacy";
