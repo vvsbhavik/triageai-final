@@ -65,147 +65,45 @@ export default function NearbyMedicalAssistance({
   // Core API fetcher for nearby medical facilities using OpenStreetMap Overpass API
   const fetchNearbyFacilities = async (lat: number, lng: number, locationName: string) => {
     setLoadingHospitals(true);
-    setHospitals([]); // Clear previous results to show skeletons
+    setHospitals([]);
     try {
-      const radiusInMeters = 10000; // 10 km radius search
-      const query = `[out:json][timeout:15];
-        (
-          node["amenity"="hospital"](around:${radiusInMeters},${lat},${lng});
-          way["amenity"="hospital"](around:${radiusInMeters},${lat},${lng});
-          node["amenity"="clinic"](around:${radiusInMeters},${lat},${lng});
-          way["amenity"="clinic"](around:${radiusInMeters},${lat},${lng});
-          node["amenity"="doctors"](around:${radiusInMeters},${lat},${lng});
-          node["amenity"="pharmacy"](around:${radiusInMeters},${lat},${lng});
-          way["amenity"="pharmacy"](around:${radiusInMeters},${lat},${lng});
-          node["amenity"="blood_bank"](around:${radiusInMeters},${lat},${lng});
-          node["healthcare"="blood_bank"](around:${radiusInMeters},${lat},${lng});
-        );
-        out center;`;
-
-      const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`, {
-        headers: {
-          "Accept": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error("Overpass API request failed");
-      }
-
+      const response = await fetch(`/api/nearby-facilities?lat=${lat}&lng=${lng}`);
+      if (!response.ok) throw new Error("Failed to fetch nearby facilities");
       const result = await response.json();
-      if (result && Array.isArray(result.elements)) {
-        const list: Hospital[] = result.elements.map((element: any) => {
-          const elLat = element.lat || element.center?.lat || lat;
-          const elLng = element.lon || element.center?.lon || lng;
-
-          const distInKm = calculateHaversine(lat, lng, elLat, elLng);
-          const durationInMins = Math.round(distInKm * 2.5 + 3); // realistic travel duration estimation
-
-          const tags = element.tags || {};
-          const isHosp = tags.amenity === "hospital";
-          const isPharmacy = tags.amenity === "pharmacy";
-          const isBloodBank = tags.amenity === "blood_bank" || tags.healthcare === "blood_bank" || tags["healthcare:speciality"] === "blood_bank";
-          const isClinic = tags.amenity === "clinic" || tags.amenity === "doctors";
-
-          // Classify Government vs Private Hospitals
-          const isGov = !!(
-            tags["operator:type"] === "government" || 
-            tags.government === "yes" || 
-            tags.operator?.toLowerCase().includes("govt") || 
-            tags.operator?.toLowerCase().includes("government") || 
-            tags.name?.toLowerCase().includes("government") || 
-            tags.name?.toLowerCase().includes("civil") || 
-            tags.name?.toLowerCase().includes("municipal") ||
-            tags.name?.toLowerCase().includes("public")
-          );
-
-          let fallbackName = "Community Medical Center";
-          if (isPharmacy) fallbackName = "Local Pharmacy";
-          else if (isBloodBank) fallbackName = "Regional Blood Bank";
-          else if (isClinic) fallbackName = "Specialty Health Clinic";
-          else if (isHosp) fallbackName = isGov ? "Government General Hospital" : "Private Specialty Hospital";
-
-          const name = tags.name || fallbackName;
-          const rawPhone = tags.phone || tags["contact:phone"] || (isHosp ? "+91 108" : "None declared");
-
-          // Compile structured address from OSM tags
-          const street = tags["addr:street"] || "";
-          const housenumber = tags["addr:housenumber"] || "";
-          const city = tags["addr:city"] || "";
-          const postcode = tags["addr:postcode"] || "";
-          const compiledAddr = [housenumber, street, city, postcode].filter(Boolean).join(" ") || tags["addr:full"] || "Healthcare District Area";
-
-          // Determine specific type label
-          let typeLabel: Hospital["type"] = isHosp ? (isGov ? "Government Hospital" : "Private Hospital") : "Clinic";
-          if (isPharmacy) typeLabel = "Pharmacy";
-          else if (isBloodBank) typeLabel = "Blood Bank";
-          
-          // Emergency department classification
-          const emergencyDept = isHosp || tags.emergency === "yes" || tags.emergency_service === "yes" || tags.name?.toLowerCase().includes("emergency") || tags.name?.toLowerCase().includes("trauma");
-          if (emergencyDept && isHosp) {
-            typeLabel = "Emergency / Trauma Center";
-          }
-
-          return {
-            id: `osm-${element.type}-${element.id}`,
-            name: name,
-            type: typeLabel,
-            rating: Math.round((4.0 + (element.id % 10) * 0.1) * 10) / 10,
-            distance: Math.round(distInKm * 100) / 100,
-            duration: durationInMins,
-            phone: rawPhone,
-            isOpen24h: isHosp || emergencyDept || tags.opening_hours?.includes("24/7") || tags["opening_hours"] === "24/7" || tags["opening_hours"] === "24h",
-            isOpenNow: true,
-            hasSpecialistWing: isHosp || tags.amenity === "hospital",
-            specialistName: assessment?.recommendedSpecialist || "General Medicine",
-            touristFriendly: tags["contact:language"]?.includes("en") || tags.wikipedia || false,
-            emergencyDept: emergencyDept,
-            address: compiledAddr,
-            lat: elLat,
-            lng: elLng,
-            isGov: isGov
-          };
-        });
-
-        // Filter valid entries
-        const validList = list.filter((h) => h.name && h.lat && h.lng);
-
-        // Sort initially by distance
-        validList.sort((a, b) => a.distance - b.distance);
-
-        setHospitals(validList);
-
-        // Cache the successful search result
-        if (validList.length > 0) {
-          const cacheData = {
-            lat,
-            lng,
-            activeLocationName: locationName,
-            hospitals: validList,
-            timestamp: Date.now(),
-          };
-          localStorage.setItem("triageai_nearby_hospitals_cache", JSON.stringify(cacheData));
-        }
-      } else {
-        throw new Error("Empty elements returned from Overpass server");
-      }
+      if (!result.success || !Array.isArray(result.facilities)) throw new Error("Invalid response");
+      const list: Hospital[] = result.facilities.map((facility: any) => ({
+        id: facility.id,
+        name: facility.name,
+        type: facility.type,
+        rating: facility.rating ?? 4.5,
+        distance: facility.distance ?? 0,
+        duration: facility.duration ?? 0,
+        phone: facility.phone ?? "None declared",
+        isOpen24h: !!facility.isOpen24h,
+        isOpenNow: facility.isOpenNow !== false,
+        hasSpecialistWing: !!facility.hasSpecialistWing,
+        specialistName: assessment?.recommendedSpecialist || "General Medicine",
+        touristFriendly: !!facility.touristFriendly,
+        emergencyDept: !!facility.emergencyDept,
+        address: facility.address ?? "",
+        lat,
+        lng,
+        isGov: String(facility.type||"").toLowerCase().includes("government"),
+      }));
+      list.sort((a,b)=>a.distance-b.distance);
+      setHospitals(list);
+      localStorage.setItem("triageai_nearby_hospitals_cache", JSON.stringify({lat,lng,activeLocationName:locationName,hospitals:list,timestamp:Date.now()}));
     } catch (err) {
-      console.error("OSM Overpass API request failed:", err);
-      
-      // Load last successful cached response if network fails or Overpass API times out
-      const cached = localStorage.getItem("triageai_nearby_hospitals_cache");
-      if (cached) {
-        try {
-          const cachedData = JSON.parse(cached);
-          setCoords({ lat: cachedData.lat, lng: cachedData.lng });
-          setActiveLocationName(cachedData.activeLocationName);
-          setHospitals(cachedData.hospitals);
-          addToast("Network failure. Restoring last successful clinical search results.", "error");
-        } catch (cacheErr) {
-          addToast("Failed to fetch live hospitals. No valid cached data available.", "error");
-        }
+      console.error(err);
+      const cached=localStorage.getItem("triageai_nearby_hospitals_cache");
+      if(cached){
+        const c=JSON.parse(cached);
+        setCoords({lat:c.lat,lng:c.lng});
+        setActiveLocationName(c.activeLocationName);
+        setHospitals(c.hospitals);
+        addToast("Loaded cached nearby hospitals.","info");
       } else {
-        addToast("Failed to fetch live hospitals. Please verify your internet connection.", "error");
+        addToast("Failed to fetch nearby hospitals.","error");
       }
     } finally {
       setLoadingHospitals(false);
