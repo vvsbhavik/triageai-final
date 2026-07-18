@@ -505,10 +505,7 @@ export default function NearbyMedicalAssistance({
                         <Star className="w-3.5 h-3.5 fill-current" />
                         <span className="text-slate-700 font-bold">{hospital.rating}</span>
                       </div>
-                      <div className="flex items-center space-x-1 text-slate-500">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span>Coords: <strong>{hospital.lat.toFixed(5) ?? "N/A"}</strong>, <strong>{hospital.lng.toFixed(5) ?? "N/A"}</strong></span>
-                      </div>
+                      
                     </div>
                   </div>
 

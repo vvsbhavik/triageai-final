@@ -1,4 +1,4 @@
-# TriageAI - AI-Powered Emergency Medical Symptom Triage & Guidance Platform
+git commit -m "Fix NearbyMedicalAssistance crash"# TriageAI - AI-Powered Emergency Medical Symptom Triage & Guidance Platform
 
 TriageAI is a secure, stable, and highly performant full-stack healthcare triage and decision-guidance platform. Built for senior software engineers, first responders, and emergency clinical operations, TriageAI leverages advanced large language models (LLMs) with multi-tier, zero-downtime redundancy systems to evaluate patient symptoms, calculate severity scores, suggest immediate first-aid, map local medical centers, and generate emergency response QR codes.
 
